@@ -68,10 +68,11 @@
         .hud {
             display: flex;
             justify-content: space-between;
-            align-items: flex-start;
+            align-items: center;
             font-size: 26px;
             font-weight: bold;
             text-shadow: 2px 2px 6px rgba(0,0,0,0.9);
+            width: 100%;
         }
         .score-board {
             color: #f1c40f;
@@ -88,6 +89,27 @@
             padding: 6px 16px;
             border-radius: 20px;
             border: 1px solid rgba(231, 76, 60, 0.3);
+        }
+        .sound-btn {
+            pointer-events: auto;
+            background: rgba(0, 0, 0, 0.6);
+            border: 2px solid #2ed573;
+            color: #fff;
+            font-size: 22px;
+            width: 46px;
+            height: 46px;
+            border-radius: 50%;
+            cursor: pointer;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            transition: all 0.2s ease;
+            box-shadow: 0 0 10px rgba(46, 213, 115, 0.3);
+        }
+        .sound-btn:hover {
+            transform: scale(1.1);
+            background: rgba(46, 213, 115, 0.3);
+            box-shadow: 0 0 15px rgba(46, 213, 115, 0.6);
         }
         .combo-box {
             position: absolute;
@@ -135,13 +157,14 @@
             left: 0;
             width: 100%;
             height: 100%;
-            background: rgba(10, 8, 20, 0.82);
+            background: rgba(10, 8, 20, 0.85);
             display: flex;
             flex-direction: column;
             justify-content: center;
             align-items: center;
             pointer-events: auto;
             backdrop-filter: blur(6px);
+            z-index: 10;
         }
         .title {
             font-size: 58px;
@@ -190,6 +213,97 @@
             margin-bottom: 25px;
             text-shadow: 2px 2px 4px #000;
         }
+
+        /* Sound Settings Panel */
+        .settings-card {
+            background: rgba(25, 20, 40, 0.95);
+            border: 2px solid #2ed573;
+            border-radius: 20px;
+            padding: 30px 40px;
+            width: 380px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.8), 0 0 20px rgba(46, 213, 115, 0.2);
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+            align-items: center;
+        }
+        .settings-title {
+            font-size: 32px;
+            color: #2ed573;
+            font-weight: 900;
+            text-shadow: 0 0 10px rgba(46, 213, 115, 0.5);
+            letter-spacing: 1px;
+        }
+        .setting-row {
+            width: 100%;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 18px;
+            font-weight: bold;
+            color: #dfe4ea;
+        }
+        .setting-row label {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .toggle-switch {
+            position: relative;
+            display: inline-block;
+            width: 50px;
+            height: 26px;
+        }
+        .toggle-switch input {
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+        .slider {
+            position: absolute;
+            cursor: pointer;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background-color: #4b6584;
+            transition: .3s;
+            border-radius: 34px;
+        }
+        .slider:before {
+            position: absolute;
+            content: "";
+            height: 18px;
+            width: 18px;
+            left: 4px;
+            bottom: 4px;
+            background-color: white;
+            transition: .3s;
+            border-radius: 50%;
+        }
+        input:checked + .slider {
+            background-color: #2ed573;
+        }
+        input:checked + .slider:before {
+            transform: translateX(24px);
+        }
+        .volume-slider {
+            width: 120px;
+            accent-color: #2ed573;
+            cursor: pointer;
+        }
+        .song-select {
+            background: #1e272e;
+            color: #dfe4ea;
+            border: 1px solid #4b6584;
+            padding: 8px 12px;
+            border-radius: 10px;
+            font-size: 15px;
+            font-weight: bold;
+            cursor: pointer;
+            outline: none;
+            width: 160px;
+        }
+        .song-select:focus {
+            border-color: #2ed573;
+        }
     </style>
 </head>
 <body>
@@ -201,6 +315,7 @@
         <div class="hud">
             <div class="score-board">🍉 <span id="scoreText">0</span></div>
             <div class="lives-board" id="livesText">❌ ❌ ❌ ❌ ❌</div>
+            <button class="sound-btn" id="soundMenuBtn" onclick="toggleSettingsMenu()" title="Sound Settings">⚙️</button>
         </div>
         <div id="comboBox" class="combo-box">COMBO x2</div>
         <div id="freezeIndicator" class="freeze-indicator">❄️ FROZEN! ❄️</div>
@@ -211,6 +326,37 @@
         <h1 class="title">Fruit Ninja</h1>
         <p class="subtitle">Slice fruits with your mouse or finger! Chain quick slices for 2x Combo points and hit Ice Bananas to freeze time!</p>
         <button class="btn" onclick="startGame()">Play Game</button>
+    </div>
+
+    <!-- Sound Settings Overlay -->
+    <div id="settingsOverlay" class="overlay hidden">
+        <div class="settings-card">
+            <h2 class="settings-title">SOUND SETTINGS</h2>
+            
+            <div class="setting-row">
+                <label for="musicToggle">🎵 Soundtrack</label>
+                <label class="toggle-switch">
+                    <input type="checkbox" id="musicToggle" checked onchange="toggleMusic(this.checked)">
+                    <span class="slider"></span>
+                </label>
+            </div>
+
+            <div class="setting-row">
+                <label for="volumeRange">🔊 Volume</label>
+                <input type="range" id="volumeRange" class="volume-slider" min="0" max="1" step="0.05" value="0.4" oninput="changeVolume(this.value)">
+            </div>
+
+            <div class="setting-row">
+                <label for="songSelect">🎼 Track</label>
+                <select id="songSelect" class="song-select" onchange="changeTrack(this.value)">
+                    <option value="ninja">Ninja Groove (synth)</option>
+                    <option value="chill">Chill Dojo (synth)</option>
+                    <option value="arcade">Arcade Rush (synth)</option>
+                </select>
+            </div>
+
+            <button class="btn" style="padding: 10px 30px; font-size: 18px; margin-top: 10px;" onclick="toggleSettingsMenu()">Resume</button>
+        </div>
     </div>
 
     <!-- Game Over Overlay -->
@@ -232,11 +378,13 @@
     const comboBox = document.getElementById('comboBox');
     const freezeIndicator = document.getElementById('freezeIndicator');
     const startOverlay = document.getElementById('startOverlay');
+    const settingsOverlay = document.getElementById('settingsOverlay');
     const gameOverOverlay = document.getElementById('gameOverOverlay');
     const finalScore = document.getElementById('finalScore');
 
     // Game state
     let gameActive = false;
+    let isPaused = false;
     let score = 0;
     let lives = 5;
     let spawnInterval = 130;
@@ -251,12 +399,142 @@
     let isComboActive = false;
     let comboCount = 0;
     let lastSliceTimestamp = 0;
-    const COMBO_TIMEOUT = 1250; // 1.25 seconds timeout
-    const COMBO_TRIGGER_WINDOW = 2000; // 2 seconds window
+    const COMBO_TIMEOUT = 1250; 
+    const COMBO_TRIGGER_WINDOW = 2000;
 
     // Slicer Blade Trail
     let bladeTrail = [];
     let isMouseDown = false;
+
+    // --- Audio Synthesizer (Procedural Soundtrack & Sound FX) --- //
+    class SoundEngine {
+        constructor() {
+            this.ctx = null;
+            this.isMuted = false;
+            this.volume = 0.4;
+            this.isPlaying = false;
+            this.currentTrack = 'ninja';
+            this.noteIndex = 0;
+            this.timer = null;
+
+            this.tracks = {
+                ninja: {
+                    bpm: 125,
+                    notes: [146.83, 164.81, 174.61, 220.00, 196.00, 174.61, 164.81, 146.83,
+                            220.00, 246.94, 261.63, 329.63, 293.66, 261.63, 246.94, 220.00]
+                },
+                chill: {
+                    bpm: 90,
+                    notes: [261.63, 329.63, 392.00, 523.25, 392.00, 329.63,
+                            220.00, 277.18, 329.63, 440.00, 329.63, 277.18]
+                },
+                arcade: {
+                    bpm: 150,
+                    notes: [130.81, 164.81, 196.00, 261.63, 196.00, 164.81,
+                            146.83, 185.00, 220.00, 293.66, 220.00, 185.00]
+                }
+            };
+        }
+
+        init() {
+            if (!this.ctx) {
+                const AudioCtx = window.AudioContext || window.webkitAudioContext;
+                this.ctx = new AudioCtx();
+            }
+            if (this.ctx.state === 'suspended') {
+                this.ctx.resume();
+            }
+        }
+
+        playMusic() {
+            this.init();
+            if (this.isPlaying || this.isMuted) return;
+            this.isPlaying = true;
+            this.scheduleNextNote();
+        }
+
+        stopMusic() {
+            this.isPlaying = false;
+            if (this.timer) clearTimeout(this.timer);
+        }
+
+        scheduleNextNote() {
+            if (!this.isPlaying || this.isMuted) return;
+
+            const track = this.tracks[this.currentTrack];
+            const freq = track.notes[this.noteIndex % track.notes.length];
+            this.noteIndex++;
+
+            if (freq) {
+                this.playTone(freq, 0.18, 'triangle');
+            }
+
+            const stepDuration = (60 / track.bpm) * 1000 / 2;
+            this.timer = setTimeout(() => this.scheduleNextNote(), stepDuration);
+        }
+
+        playTone(freq, duration, type = 'sine') {
+            if (!this.ctx || this.isMuted || this.volume <= 0) return;
+
+            try {
+                const osc = this.ctx.createOscillator();
+                const gain = this.ctx.createGain();
+
+                osc.type = type;
+                osc.frequency.setValueAtTime(freq, this.ctx.currentTime);
+
+                gain.gain.setValueAtTime(this.volume * 0.3, this.ctx.currentTime);
+                gain.gain.exponentialRampToValueAtTime(0.001, this.ctx.currentTime + duration);
+
+                osc.connect(gain);
+                gain.connect(this.ctx.destination);
+
+                osc.start();
+                osc.stop(this.ctx.currentTime + duration);
+            } catch(e) {}
+        }
+
+        playSwoosh() {
+            this.init();
+            this.playTone(300 + Math.random() * 200, 0.08, 'sawtooth');
+        }
+
+        playSlice() {
+            this.init();
+            this.playTone(600 + Math.random() * 300, 0.06, 'square');
+        }
+    }
+
+    const audio = new SoundEngine();
+
+    function toggleSettingsMenu() {
+        if (!gameActive && !isPaused) return;
+
+        isPaused = !isPaused;
+        if (isPaused) {
+            settingsOverlay.classList.remove('hidden');
+        } else {
+            settingsOverlay.classList.add('hidden');
+        }
+    }
+
+    function toggleMusic(enabled) {
+        audio.isMuted = !enabled;
+        if (enabled) {
+            audio.playMusic();
+        } else {
+            audio.stopMusic();
+        }
+    }
+
+    function changeVolume(val) {
+        audio.volume = parseFloat(val);
+    }
+
+    function changeTrack(trackName) {
+        audio.currentTrack = trackName;
+        audio.noteIndex = 0;
+    }
 
     // Rich Fruit definitions
     const FRUIT_TYPES = [
@@ -303,8 +581,6 @@
         ctx.lineWidth = 14;
         ctx.strokeRect(15, 15, canvas.width - 30, canvas.height - 30);
     }
-
-    // --- High Realism Fruit Vector Shapes & Renderers --- //
 
     function drawBananaPath(ctx, r) {
         ctx.beginPath();
@@ -361,7 +637,6 @@
             ctx.fillStyle = grad;
             ctx.fill();
 
-            // Dark wavy stripes
             ctx.save();
             ctx.clip();
             ctx.fillStyle = '#0a3d28';
@@ -375,7 +650,6 @@
             }
             ctx.restore();
 
-            // Highlight shine
             ctx.beginPath();
             ctx.arc(-r * 0.35, -r * 0.35, r * 0.22, 0, Math.PI * 2);
             ctx.fillStyle = 'rgba(255, 255, 255, 0.3)';
@@ -390,7 +664,6 @@
             ctx.fillStyle = grad;
             ctx.fill();
 
-            // Leafy scales
             ctx.fillStyle = '#2ed573';
             ctx.strokeStyle = '#20bf6b';
             ctx.lineWidth = 1.5;
@@ -425,7 +698,6 @@
             ctx.fillStyle = grad;
             ctx.fill();
 
-            // Stem & leaf
             ctx.fillStyle = '#5d4037';
             ctx.fillRect(-2, -r * 0.9, 4, 8);
             ctx.fillStyle = '#2ed573';
@@ -433,7 +705,6 @@
             ctx.ellipse(5, -r * 0.8, 7, 3.5, Math.PI / 4, 0, Math.PI * 2);
             ctx.fill();
 
-            // Highlight
             ctx.beginPath();
             ctx.arc(-r * 0.35, -r * 0.35, r * 0.2, 0, Math.PI * 2);
             ctx.fillStyle = 'rgba(255, 255, 255, 0.4)';
@@ -449,7 +720,6 @@
             ctx.fillStyle = grad;
             ctx.fill();
 
-            // Pores texture
             ctx.fillStyle = 'rgba(0, 0, 0, 0.12)';
             for (let i = 0; i < 16; i++) {
                 const px = (Math.random() - 0.5) * r * 1.5;
@@ -459,7 +729,6 @@
                 }
             }
 
-            // Stem navel
             ctx.fillStyle = '#27ae60';
             ctx.beginPath();
             ctx.arc(0, -r * 0.85, 3, 0, Math.PI * 2);
@@ -474,7 +743,6 @@
             ctx.fillStyle = grad;
             ctx.fill();
 
-            // Green tip
             ctx.fillStyle = '#2ed573';
             ctx.beginPath();
             ctx.arc(-r * 1.25, 0, 3, 0, Math.PI * 2);
@@ -489,7 +757,6 @@
             ctx.fillStyle = grad;
             ctx.fill();
 
-            // Yellow seeds
             ctx.fillStyle = '#fffa65';
             for (let sx = -r * 0.5; sx <= r * 0.5; sx += 8) {
                 for (let sy = -r * 0.3; sy <= r * 0.8; sy += 9) {
@@ -499,7 +766,6 @@
                 }
             }
 
-            // Green cap
             ctx.fillStyle = '#2ed573';
             ctx.beginPath();
             ctx.arc(0, -r * 0.55, 7, 0, Math.PI * 2);
@@ -515,7 +781,6 @@
             ctx.fillStyle = grad;
             ctx.fill();
 
-            // Diamond pattern
             ctx.save();
             ctx.clip();
             ctx.strokeStyle = 'rgba(0, 0, 0, 0.35)';
@@ -528,7 +793,6 @@
             }
             ctx.restore();
 
-            // Crown leaves
             ctx.fillStyle = '#2ed573';
             ctx.beginPath();
             ctx.moveTo(-r * 0.4, -r * 0.8); ctx.lineTo(-r * 0.9, -r * 1.6); ctx.lineTo(0, -r * 0.95);
@@ -545,7 +809,6 @@
             ctx.fillStyle = grad;
             ctx.fill();
 
-            // Three eyes
             ctx.fillStyle = '#21120b';
             ctx.beginPath();
             ctx.arc(-6, -6, 3.5, 0, Math.PI * 2);
@@ -563,7 +826,6 @@
             ctx.fillStyle = grad;
             ctx.fill();
 
-            // Fuzzy texture
             ctx.strokeStyle = 'rgba(255, 255, 255, 0.15)';
             ctx.lineWidth = 1;
             for (let a = 0; a < Math.PI * 2; a += 0.4) {
@@ -582,7 +844,6 @@
                 ctx.fillStyle = '#fff200';
                 ctx.fillRect(-r * 2, -r * 2, r * 4, r * 4);
 
-                // Cyan ice stripes
                 ctx.fillStyle = '#00d2d3';
                 for (let i = -r * 2; i < r * 2; i += 12) {
                     ctx.fillRect(i, -r * 2, 6, r * 4);
@@ -604,7 +865,6 @@
                 ctx.stroke();
             }
 
-            // Dark tip and stem
             ctx.fillStyle = '#4b382a';
             ctx.beginPath(); ctx.arc(-r * 1.15, -r * 0.28, 3.5, 0, Math.PI * 2); ctx.fill();
             ctx.beginPath(); ctx.arc(r * 1.25, 0, 3, 0, Math.PI * 2); ctx.fill();
@@ -648,7 +908,7 @@
         }
 
         update() {
-            if (freezeTimer > 0) return;
+            if (freezeTimer > 0 || isPaused) return;
 
             this.x += this.vx;
             this.y += this.vy;
@@ -719,7 +979,7 @@
         }
 
         update() {
-            if (freezeTimer > 0) return;
+            if (freezeTimer > 0 || isPaused) return;
 
             this.x += this.vx;
             this.y += this.vy;
@@ -758,7 +1018,6 @@
                 ctx.fillStyle = this.type.innerColor;
                 ctx.fill();
 
-                // Seeds on cut interior
                 if (['watermelon', 'apple', 'kiwi', 'dragonfruit'].includes(this.type.name)) {
                     ctx.fillStyle = '#111';
                     const sideMult = this.isLeft ? -1 : 1;
@@ -788,6 +1047,7 @@
         }
 
         update() {
+            if (isPaused) return;
             this.x += this.vx;
             this.y += this.vy;
             this.vy += this.gravity;
@@ -877,13 +1137,15 @@
     }
 
     window.addEventListener('mousedown', (e) => {
+        if (isPaused) return;
         isMouseDown = true;
         bladeTrail = [];
         addBladePoint(e.clientX, e.clientY);
+        audio.playSwoosh();
     });
 
     window.addEventListener('mousemove', (e) => {
-        if (isMouseDown) {
+        if (isMouseDown && !isPaused) {
             addBladePoint(e.clientX, e.clientY);
             checkSlices();
         }
@@ -892,14 +1154,17 @@
     window.addEventListener('mouseup', () => { isMouseDown = false; });
 
     canvas.addEventListener('touchstart', (e) => {
+        if (isPaused) return;
         e.preventDefault();
         isMouseDown = true;
         bladeTrail = [];
         const touch = e.touches[0];
         addBladePoint(touch.clientX, touch.clientY);
+        audio.playSwoosh();
     });
 
     canvas.addEventListener('touchmove', (e) => {
+        if (isPaused) return;
         e.preventDefault();
         if (isMouseDown) {
             const touch = e.touches[0];
@@ -929,7 +1194,7 @@
     }
 
     function checkSlices() {
-        if (bladeTrail.length < 2 || !gameActive) return;
+        if (bladeTrail.length < 2 || !gameActive || isPaused) return;
 
         const p1 = bladeTrail[bladeTrail.length - 2];
         const p2 = bladeTrail[bladeTrail.length - 1];
@@ -977,7 +1242,8 @@
 
     function sliceFruit(fruit, index) {
         items.splice(index, 1);
-        
+        audio.playSlice();
+
         updateComboSystem();
 
         const pointsEarned = fruit.type.score * (isComboActive ? 2 : 1);
@@ -1034,6 +1300,7 @@
         bladeTrail = [];
         frameCount = 0;
         freezeTimer = 0;
+        isPaused = false;
         resetCombo();
         gameActive = true;
 
@@ -1045,18 +1312,22 @@
 
         startOverlay.classList.add('hidden');
         gameOverOverlay.classList.add('hidden');
+        settingsOverlay.classList.add('hidden');
+
+        audio.playMusic();
     }
 
     function endGame() {
         gameActive = false;
+        isPaused = false;
         finalScore.innerText = score;
         resetCombo();
         gameOverOverlay.classList.remove('hidden');
         gameContainer.classList.remove('frozen');
         freezeIndicator.style.display = 'none';
+        audio.stopMusic();
     }
 
-    // --- FIXED VIGNETTE DRAWING FUNCTION --- //
     function drawIceVignette(ratio) {
         ctx.save();
         
@@ -1079,7 +1350,6 @@
         ctx.strokeStyle = `rgba(0, 210, 211, ${0.95 * ratio})`;
         ctx.lineWidth = 3;
 
-        // Top Ice Edge
         ctx.beginPath();
         ctx.moveTo(0, 0);
         for (let x = 0; x <= w; x += 25) {
@@ -1091,7 +1361,6 @@
         ctx.fill();
         ctx.stroke();
 
-        // Bottom Ice Edge
         ctx.beginPath();
         ctx.moveTo(0, h);
         for (let x = 0; x <= w; x += 25) {
@@ -1103,7 +1372,6 @@
         ctx.fill();
         ctx.stroke();
 
-        // Left Ice Edge
         ctx.beginPath();
         ctx.moveTo(0, 0);
         for (let y = 0; y <= h; y += 25) {
@@ -1115,7 +1383,6 @@
         ctx.fill();
         ctx.stroke();
 
-        // Right Ice Edge (Fixed lineTo call)
         ctx.beginPath();
         ctx.moveTo(w, 0);
         for (let y = 0; y <= h; y += 25) {
@@ -1136,13 +1403,13 @@
         const deltaTime = currentTime - lastTime;
         lastTime = currentTime;
 
-        if (gameActive && isComboActive) {
+        if (gameActive && isComboActive && !isPaused) {
             if (Date.now() - lastSliceTimestamp > COMBO_TIMEOUT) {
                 resetCombo();
             }
         }
 
-        if (freezeTimer > 0) {
+        if (freezeTimer > 0 && !isPaused) {
             freezeTimer -= deltaTime;
             if (freezeTimer <= 0) {
                 freezeTimer = 0;
@@ -1155,7 +1422,7 @@
         splatters.forEach(s => s.draw());
 
         if (gameActive) {
-            if (freezeTimer <= 0) {
+            if (freezeTimer <= 0 && !isPaused) {
                 frameCount++;
                 if (frameCount % spawnInterval === 0) {
                     const count = Math.floor(Math.random() * 2) + 1;
@@ -1170,7 +1437,7 @@
                 item.update();
                 item.draw();
 
-                if (item.y - item.radius > canvas.height + 50) {
+                if (!isPaused && item.y - item.radius > canvas.height + 50) {
                     if (!item.isBomb && !item.isHalf) {
                         lives--;
                         updateLivesUI();
@@ -1192,7 +1459,7 @@
             const p = particles[i];
             p.update();
             p.draw();
-            if (p.alpha <= 0) particles.splice(i, 1);
+            if (!isPaused && p.alpha <= 0) particles.splice(i, 1);
         }
 
         const now = Date.now();
